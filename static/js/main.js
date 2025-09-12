@@ -25,7 +25,42 @@ async function refreshAll() {
     for (const [k, v] of Object.entries(prices)) {
       const row = document.createElement('div');
       row.className = 'price-item';
-      row.innerHTML = `<span>${k}</span><span>$${Number(v).toFixed(2)}</span>`;
+
+      const label = document.createElement('span');
+      label.textContent = k;
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.step = '0.01';
+      input.value = Number(v).toFixed(2);
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Update';
+      btn.addEventListener('click', async () => {
+        try {
+          btn.disabled = true;
+          await api('/prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item: k, sell_price: parseFloat(input.value) })
+          });
+          btn.textContent = 'Saved';
+          setTimeout(() => { btn.textContent = 'Update'; btn.disabled = false; }, 1000);
+        } catch (e) {
+          console.error(e);
+          btn.textContent = 'Error';
+          btn.disabled = false;
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btn.click();
+      });
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(btn);
       pEl.appendChild(row);
     }
 
