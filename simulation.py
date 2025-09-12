@@ -1,7 +1,14 @@
 import random
 from datetime import datetime, timedelta, date
 from typing import Dict, List
-from utils.file_manager import read_json, write_json, today_from_config, set_current_date, advance_one_day, set_last_simulated_date
+from utils.file_manager import (
+    read_json,
+    write_json,
+    today_from_config,
+    set_current_date,
+    advance_one_day,
+    set_last_simulated_date,
+)
 from models.inventory import get_inventory, deduct_stock, get_cost_price, apply_restocks
 from models.sales import record_sale
 from models.financials import update_daily
@@ -14,9 +21,13 @@ def _sales_volume_bounds(cfg, dow: int) -> int:
     vol = int(round(base * mult))
     return max(vol, 0)
 
-def _pick_item(inv: Dict[str, Dict]) -> str:
-    # Simple uniform selection among items with stock > 0
-    candidates = [k for k, v in inv.items() if int(v.get("stock",0)) > 0]
+def _pick_item(inv: Dict[str, Dict], price_limit: float) -> str:
+    """Choose a random item that is in stock and priced within limit."""
+    candidates = [
+        k
+        for k, v in inv.items()
+        if int(v.get("stock", 0)) > 0 and float(v.get("sell_price", 0.0)) <= price_limit
+    ]
     if not candidates:
         return None
     return random.choice(candidates)
@@ -34,11 +45,12 @@ def simulate_day() -> Dict:
     inv = get_inventory()
     sales_records = []
     sales_count = _sales_volume_bounds(cfg, dow)
+    price_limit = float(cfg["sales_simulation"].get("max_affordable_price", float("inf")))
 
     for _ in range(sales_count):
-        item = _pick_item(inv)
+        item = _pick_item(inv, price_limit)
         if not item:
-            break  # out of stock on everything
+            break  # nothing affordable or all out of stock
         # sell one unit at a time to allow distribution
         if deduct_stock(item, 1):
             inv = get_inventory()  # reload since deducted

@@ -14,7 +14,8 @@
       "4": 1.1,
       "5": 0.9,
       "6": 0.85
-    }
+    },
+    "max_affordable_price": 2.0
   },
   "supplier": {
     "lead_time_days": 2,
