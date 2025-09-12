@@ -4,7 +4,7 @@
     "maintenance": 1.0
   },
   "sales_simulation": {
-    "min_sales_per_day": 5,
+    "min_sales_per_day": 1,
     "max_sales_per_day": 20,
     "dow_multipliers": {
       "0": 1.0,
@@ -22,8 +22,8 @@
   },
   "simulation": {
     "running": true,
-    "current_date": "2026-02-20",
-    "last_simulated_date": "2026-02-19"
+    "current_date": "2025-09-12",
+    "last_simulated_date": "2025-09-12"
   },
   "tick_seconds": 60
 }
