@@ -26,7 +26,8 @@ DEFAULTS = {
             "max_sales_per_day": 20,
             "dow_multipliers": {  # 0=Mon ... 6=Sun
                 "0": 1.0, "1": 1.0, "2": 1.05, "3": 1.05, "4": 1.1, "5": 0.9, "6": 0.85
-            }
+            },
+            "max_affordable_price": 2.0,
         },
         "supplier": {
             "lead_time_days": 2,
