@@ -1,0 +1,29 @@
+{
+  "operating_expenses": {
+    "electricity": 1.0,
+    "maintenance": 1.0
+  },
+  "sales_simulation": {
+    "min_sales_per_day": 5,
+    "max_sales_per_day": 20,
+    "dow_multipliers": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.05,
+      "3": 1.05,
+      "4": 1.1,
+      "5": 0.9,
+      "6": 0.85
+    }
+  },
+  "supplier": {
+    "lead_time_days": 2,
+    "min_order_qty": 10
+  },
+  "simulation": {
+    "running": true,
+    "current_date": "2026-02-20",
+    "last_simulated_date": "2026-02-19"
+  },
+  "tick_seconds": 60
+}

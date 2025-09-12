@@ -1,0 +1,11 @@
+body { font-family: Arial, sans-serif; background: #f6f8fa; color: #111; }
+.container { max-width: 1000px; margin: 24px auto; padding: 16px; }
+header { display:flex; justify-content:space-between; align-items:center; }
+.controls { margin: 12px 0; }
+.controls button { margin-right:8px; padding:8px 12px; }
+.grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.card { background: #fff; padding:12px; border-radius:6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.inv-item, .price-item { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eee; }
+footer { margin-top:16px; text-align:center; color:#666; }
+.chart-card { max-height: 400px; }
+#sales-trend { max-height: 300px; }

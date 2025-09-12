@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vending Machine Monitor</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Vending Machine Monitor</h1>
+      <div id="status-line">Loading...</div>
+    </header>
+
+    <section class="controls">
+      <button id="simulate-day">Simulate Day</button>
+      <button id="apply-restock">Apply Restock</button>
+      <button id="refresh">Refresh</button>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Inventory</h2>
+        <div id="inventory">Loading...</div>
+      </div>
+
+      <div class="card">
+        <h2>Prices</h2>
+        <div id="prices">Loading...</div>
+      </div>
+
+      <div class="card">
+        <h2>Today's Sales</h2>
+        <div id="sales">Loading...</div>
+      </div>
+
+      <div class="card">
+        <h2>Financials</h2>
+        <div id="financials">Loading...</div>
+      </div>
+    </section>
+
+    <section class="card chart-card">
+      <h2>Sales Trends</h2>
+      <div class="chart-controls">
+        <label for="product-select">Product:</label>
+        <select id="product-select">
+          <option value="__all__">All products</option>
+        </select>
+      </div>
+      <canvas id="sales-trend"></canvas>
+    </section>
+
+    <footer>
+      <small>Local demo UI — not for production</small>
+    </footer>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
