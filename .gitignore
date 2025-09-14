@@ -1,2 +1,8 @@
 /.pytest_cache
 /__pycache__
+# Ignore all files in the data folder
+/data/*
+# Ignore all json files in every directory and folder
+*.json
+/cloudflared/config.yml
+/cloudflared/cert.pem

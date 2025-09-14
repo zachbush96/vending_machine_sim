@@ -4,69 +4,69 @@
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.5,
-    "sell_price": 62.0
+    "sell_price": 1.75
   },
   "Diet Coke": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.5,
-    "sell_price": 58.0
+    "sell_price": 1.75
   },
   "Pepsi": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.5,
-    "sell_price": 62.0
+    "sell_price": 1.75
   },
   "Water": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.2,
-    "sell_price": 57.0
+    "sell_price": 1.25
   },
   "Chips": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.35,
-    "sell_price": 52.0
+    "sell_price": 1.75
   },
   "Pretzels": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.3,
-    "sell_price": 50.0
+    "sell_price": 1.75
   },
   "Candy Bar": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.4,
-    "sell_price": 50.0
+    "sell_price": 1.75
   },
   "Gum": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.1,
-    "sell_price": 46.0
+    "sell_price": 0.75
   },
   "Cookies": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.45,
-    "sell_price": 48.0
+    "sell_price": 1.75
   },
   "Granola Bar": {
     "stock": 0,
     "restock_pending": 0,
     "restock_eta": null,
     "cost_price": 0.35,
-    "sell_price": 48.0
+    "sell_price": 2.0
   }
 }

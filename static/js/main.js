@@ -109,6 +109,16 @@ document.getElementById('apply-restock').addEventListener('click', async () => {
   } catch (e) { console.error(e); document.getElementById('status-line').textContent = 'Restock failed'; }
 });
 
+document.getElementById('reset-simulation').addEventListener('click', async () => {
+  try {
+    if (!confirm('Reset simulation data to defaults? This will erase sales and financials. Continue?')) return;
+    document.getElementById('status-line').textContent = 'Resetting simulation...';
+    await api('/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset_config: true }) });
+    await refreshAll();
+    document.getElementById('status-line').textContent = 'Reset complete';
+  } catch (e) { console.error(e); document.getElementById('status-line').textContent = 'Reset failed'; }
+});
+
 // initial load
 refreshAll();
 

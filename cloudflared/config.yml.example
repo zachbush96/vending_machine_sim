@@ -1,0 +1,9 @@
+tunnel: {{TUNNEL_ID}}
+credentials-file: /home/nonroot/.cloudflared/{{TUNNEL_ID}}.json
+
+ingress:
+  - hostname: app.domain.com
+    service: http://app:5000
+  - hostname: mcp.domain.com
+    service: http://app:8000
+  - service: http_status:404

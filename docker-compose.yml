@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    image: zach/vending-sim:latest
+    container_name: vending-sim
+    restart: unless-stopped
+    # Persist only your data directory; the code stays baked in the image
+    volumes:
+      - data_vol:/app/data
+    expose:
+      - "5000"
+      - "8000"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cf-vending-tunnel
+    restart: unless-stopped
+    depends_on: [app]
+    # This runs the named tunnel defined in config.yml
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/home/nonroot/.cloudflared
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+
+volumes:
+  data_vol: {}

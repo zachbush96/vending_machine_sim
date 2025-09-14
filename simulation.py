@@ -19,7 +19,14 @@ def _sales_volume_bounds(cfg, dow: int) -> int:
     mult = float(cfg["sales_simulation"]["dow_multipliers"].get(str(dow), 1.0))
     base = random.randint(minv, maxv)
     vol = int(round(base * mult))
-    return max(vol, 0)
+
+    if vol < minv:
+        vol = minv
+    if vol > maxv:
+        vol = maxv
+    return vol
+
+    #return max(vol, 0)
 
 def _pick_item(inv: Dict[str, Dict], price_limit: float) -> str:
     """Choose a random item that is in stock and priced within limit."""

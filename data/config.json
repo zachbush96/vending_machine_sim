@@ -23,8 +23,8 @@
   },
   "simulation": {
     "running": true,
-    "current_date": "2025-09-15",
-    "last_simulated_date": "2025-09-14"
+    "current_date": "2027-11-01",
+    "last_simulated_date": "2027-10-31"
   },
   "tick_seconds": 60
 }

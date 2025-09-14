@@ -32,175 +32,9 @@ This MCP server provides access to local vending machine simulation data. It sup
 searching and fetching documents related to inventory, sales, and financials. 
 """
 
-
-def load_all_documents() -> List[Dict[str, Any]]:
-    """Load available document-like records from data files.
-
-    We map items in `data/inventory.json` into small documents with id/title/text/url.
-    """
-    docs: List[Dict[str, Any]] = []
-
-    # Inventory items
-    inv_path = os.path.join(DATA_DIR, "inventory.json")
-    if os.path.exists(inv_path):
-        try:
-            with open(inv_path, "r", encoding="utf-8") as f:
-                inventory = json.load(f)
-            for item in inventory.get("items", []) if isinstance(inventory, dict) else inventory:
-                item_id = item.get("id") or item.get("sku") or item.get("name")
-                title = item.get("name") or f"Item {item_id}"
-                text = json.dumps(item)
-                docs.append({
-                    "id": str(item_id),
-                    "title": title,
-                    "text": text,
-                    "url": f"local://inventory/{item_id}",
-                    "metadata": {"source": "inventory"},
-                })
-        except Exception:
-            LOG.exception("Failed to load inventory.json")
-
-    # Sales records (short summary docs)
-    sales_path = os.path.join(DATA_DIR, "sales.json")
-    if os.path.exists(sales_path):
-        try:
-            with open(sales_path, "r", encoding="utf-8") as f:
-                sales = json.load(f)
-            # create a doc per sale
-            for s in sales.get("sales", []) if isinstance(sales, dict) else sales:
-                sid = s.get("id") or s.get("sale_id")
-                title = f"Sale {sid}"
-                text = json.dumps(s)
-                docs.append({
-                    "id": f"sale-{sid}",
-                    "title": title,
-                    "text": text,
-                    "url": f"local://sales/{sid}",
-                    "metadata": {"source": "sales"},
-                })
-        except Exception:
-            LOG.exception("Failed to load sales.json")
-
-    # Financials (single doc)
-    fin_path = os.path.join(DATA_DIR, "financials.json")
-    if os.path.exists(fin_path):
-        try:
-            with open(fin_path, "r", encoding="utf-8") as f:
-                fin = json.load(f)
-            docs.append({
-                "id": "financials",
-                "title": "Financials",
-                "text": json.dumps(fin),
-                "url": "local://financials",
-                "metadata": {"source": "financials"},
-            })
-        except Exception:
-            LOG.exception("Failed to load financials.json")
-
-    return docs
-
-
 def create_server() -> FastMCP:
     mcp = FastMCP(name="Vending Machine Local MCP", instructions=server_instructions)
 
-    @mcp.tool()
-    async def search(query: str) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Search documents for a query string and return lightweight results.
-
-        This tool performs a simple, local fuzzy search over document titles and
-        text loaded from the `data/` files (inventory, sales, financials). It
-        returns a minimal result set suitable for quick semantic filtering. The
-        returned value is formatted as an MCP content array: a dict with a
-        single `content` key containing a list of text items. The text item
-        contains a JSON-encoded payload with a `results` array.
-
-        Args:
-            query: Natural language or keyword query. If empty or whitespace,
-                   the tool returns an empty results list.
-
-        Returns:
-            Dict with `content` -> [{"type":"text","text": json_payload}].
-            The JSON payload has the shape {"results": [{"id","title","url"}, ...]}.
-
-        Edge cases & notes:
-            - This is not a vector or semantic embedding search; it uses simple
-              substring matching on title and text.
-            - Results are reloaded on each call so they reflect current data
-              files. Large data files may slow this tool.
-            - Use the `fetch` tool to retrieve full document content for any
-              id returned here.
-        """
-        if not query or not query.strip():
-            return {"content": [{"type": "text", "text": json.dumps({"results": []})}]}
-
-        q = query.lower()
-        results: List[Dict[str, Any]] = []
-        # reload documents to reflect current data
-        documents = load_all_documents()
-        for doc in documents:
-            title = doc.get("title", "").lower()
-            text = doc.get("text", "").lower()
-            if q in title or q in text:
-                # Return subset metadata for search result
-                results.append({
-                    "id": doc["id"],
-                    "title": doc.get("title"),
-                    "url": doc.get("url"),
-                })
-
-        # MCP requires the tool result to be returned as a content array with one text item
-        payload = json.dumps({"results": results})
-        return {"content": [{"type": "text", "text": payload}]}
-
-    @mcp.tool()
-    async def fetch(id: str) -> Dict[str, Any]:
-        """
-        Fetch a single document by id and return its full JSON content.
-
-        This tool looks up documents produced by `load_all_documents()` and
-        returns a complete document encoded as JSON inside an MCP content
-        array. The payload contains id, title, text, url and metadata fields.
-
-        Args:
-            id: Document identifier as returned by search or the local URL
-                fragment (for example: 'sale-123', 'financials', or an item id).
-
-        Returns:
-            Dict with `content` -> [{"type":"text","text": json_document}].
-            json_document contains the document object.
-
-        Edge cases & errors:
-            - If `id` is falsy a ValueError is raised (MCP callers should provide id).
-            - If no document matches, a ValueError is raised indicating not found.
-            - Because the document `text` field may itself be JSON, callers may
-              need to parse the returned text to access nested fields.
-        """
-        if not id:
-            raise ValueError("id is required")
-
-        # reload documents to reflect current data
-        documents = load_all_documents()
-        hit = None
-        for doc in documents:
-            if str(doc.get("id")) == str(id) or doc.get("id") == id:
-                hit = doc
-                break
-
-        if not hit:
-            raise ValueError(f"Document not found: {id}")
-
-        result_payload = json.dumps({
-            "id": hit.get("id"),
-            "title": hit.get("title"),
-            "text": hit.get("text"),
-            "url": hit.get("url"),
-            "metadata": hit.get("metadata"),
-        })
-
-        return {"content": [{"type": "text", "text": result_payload}]}
-
-    # ---- Action tools ----
     @mcp.tool()
     async def status() -> Dict[str, Any]:
         """
@@ -276,43 +110,61 @@ def create_server() -> FastMCP:
 
     @mcp.tool()
     async def order_inventory(arg: str) -> Dict[str, Any]:
-        """
-        Place a supplier order for a given item.
+      """
+      Place supplier order(s) for item(s).
 
-        The `arg` parameter should be a JSON string with either a single
-        item and qty (e.g. {"item":"Coke","qty":20}). The tool checks
-        supplier config from `config.json` (min order qty and lead time) and
-        calls `place_order()` to create the pending order.
+      The `arg` parameter accepts:
+        - single order: {"item":"Coke","qty":20}
+        - bulk list: {"orders":[{"item":"Coke","qty":20}, {"item":"Pepsi","qty":10}]}
+        - items dict: {"items": {"Coke":20, "Pepsi":10}}
 
-        Args:
-            arg: JSON-encoded string describing the order.
+      Returns MCP content array with {"orders":[...], "errors":[...]}.
+      """
+      try:
+        data = json.loads(arg) if arg else {}
+      except Exception:
+        return {"content": [{"type": "text", "text": json.dumps({"error": "Invalid JSON argument"})}]}
 
-        Returns:
-            MCP content array containing either {"order": {...}} on success
-            or {"error": "..."} when input validation or placement fails.
+      cfg = read_json("config.json")
+      min_q = int(cfg["supplier"].get("min_order_qty", 1))
+      lead = int(cfg["supplier"].get("lead_time_days", 1))
+      current_date = cfg["simulation"]["current_date"]
 
-        Edge cases:
-            - If `arg` is invalid JSON the tool returns an error payload.
-            - Qty is coerced to int; non-positive qty or missing item returns an error.
-        """
+      # Normalize to a list of order entries
+      entries = []
+      if isinstance(data.get("orders"), list):
+        entries = data["orders"]
+      elif "items" in data and isinstance(data["items"], dict):
+        entries = [{"item": k, "qty": v} for k, v in data["items"].items()]
+      else:
+        # single order fallback
+        entries = [{"item": data.get("item"), "qty": data.get("qty", 0)}]
+
+      placed = []
+      errors = []
+      for e in entries:
+        item = e.get("item")
         try:
-            data = json.loads(arg) if arg else {}
+          qty = int(e.get("qty", 0))
         except Exception:
-            return {"content": [{"type": "text", "text": json.dumps({"error": "Invalid JSON argument"})}]}
+          errors.append({"item": item, "error": "qty must be an integer"})
+          continue
 
-        item = data.get("item")
-        qty = int(data.get("qty", 0))
         if not item or qty <= 0:
-            return {"content": [{"type": "text", "text": json.dumps({"error": "Provide item and positive qty"})}]}
+          errors.append({"item": item, "error": "Provide item and positive qty"})
+          continue
 
-        cfg = read_json("config.json")
-        min_q = int(cfg["supplier"].get("min_order_qty", 1))
-        lead = int(cfg["supplier"].get("lead_time_days", 1))
         try:
-            res = place_order(item, qty, cfg["simulation"]["current_date"], min_q, lead)
-            return {"content": [{"type": "text", "text": json.dumps({"order": res})}]}
-        except Exception as e:
-            return {"content": [{"type": "text", "text": json.dumps({"error": str(e)})}]}
+          res = place_order(item, qty, current_date, min_q, lead)
+          placed.append(res)
+        except Exception as exc:
+          errors.append({"item": item, "error": str(exc)})
+
+      payload = {"orders": placed}
+      if errors:
+        payload["errors"] = errors
+
+      return {"content": [{"type": "text", "text": json.dumps(payload)}]}
 
     @mcp.tool()
     async def apply_restock() -> Dict[str, Any]:
@@ -384,27 +236,94 @@ def create_server() -> FastMCP:
                 if not item or price is None:
                     raise ValueError("Provide 'prices' dict or 'item' and 'sell_price'")
                 set_price(item, float(price))
+            # return current prices
             return {"content": [{"type": "text", "text": json.dumps({"prices": get_prices()})}]}
         except Exception as e:
             return {"content": [{"type": "text", "text": json.dumps({"error": str(e)})}]}
 
     @mcp.tool()
-    async def simulate_day_tool() -> Dict[str, Any]:
+    async def reset_simulation(reset_arg: str = None) -> Dict[str, Any]:
         """
-        Advance the simulation by one day and return the day summary.
+        Reset simulation data files (inventory, sales, financials) and optionally config.
 
-        This tool calls the project's `simulate_day()` function which performs a
-        single simulation tick: generating sales, updating inventory, and
-        recording financials. The returned summary is encoded inside the MCP
-        content array and typically contains statistics about sales, restocks,
-        and profit/loss for the day.
-
-        Edge cases:
-            - simulate_day may raise if dependencies or data files are missing;
-              any exception will propagate unless handled by the caller.
+        The `reset_arg` may be a JSON string like {"reset_config": true} or
+        omitted/empty to only reset runtime data files. This mirrors the `/reset`
+        HTTP endpoint in the Flask app.
         """
-        summary = simulate_day()
-        return {"content": [{"type": "text", "text": json.dumps({"summary": summary})}]}
+        try:
+            data = json.loads(reset_arg) if reset_arg else {}
+        except Exception:
+            data = {}
+
+        reset_config = bool(data.get("reset_config", False))
+        # Use the project's DEFAULTS to restore files
+        from utils.file_manager import DEFAULTS, write_json
+
+        for fname in ["inventory.json", "sales.json", "financials.json"]:
+            write_json(fname, DEFAULTS[fname])
+        if reset_config:
+            write_json("config.json", DEFAULTS["config.json"])
+
+        return {"content": [{"type": "text", "text": json.dumps({"ok": True})}]}
+
+    @mcp.tool()
+    async def simulate_day_tool(arg: str) -> Dict[str, Any]:
+      """
+      Advance the simulation by N days and return summaries.
+
+      The `arg` may be:
+        - an integer string like "5"
+        - a JSON integer like "5"
+        - a JSON object with {"days": N}
+
+      Days will be coerced to int and must be between 1 and 90 (inclusive).
+      The tool calls `simulate_day()` repeatedly and returns a list of daily
+      summaries. Non-JSON-serializable summaries are returned as strings.
+
+      Returns:
+        MCP content array with JSON: {"days": N, "summaries": [...]}
+        or {"error": "..."} on invalid input or runtime errors.
+      """
+      # parse argument to determine number of days
+      try:
+        if not arg or not arg.strip():
+          days = 1
+        else:
+          # try JSON first (handles {"days":N} or plain JSON number)
+          try:
+            parsed = json.loads(arg)
+            if isinstance(parsed, dict) and "days" in parsed:
+              days = int(parsed["days"])
+            elif isinstance(parsed, (int, float, str)):
+              days = int(parsed)
+            else:
+              # fallback to parsing plain string int
+              days = int(str(parsed))
+          except Exception:
+            # fallback: try to parse as plain integer string
+            days = int(arg)
+      except Exception:
+        return {"content": [{"type": "text", "text": json.dumps({"error": "Invalid days argument"})}]}
+
+      # validate range
+      if days < 1 or days > 90:
+        return {"content": [{"type": "text", "text": json.dumps({"error": "days must be between 1 and 90"})}]}
+
+      summaries = []
+      try:
+        for i in range(days):
+          summary = simulate_day()
+          # ensure JSON serializability per-item; if not serializable, stringify it
+          try:
+            json.dumps(summary)
+            summaries.append(summary)
+          except Exception:
+            summaries.append(str(summary))
+      except Exception as e:
+        return {"content": [{"type": "text", "text": json.dumps({"error": f"Simulation failed on day {len(summaries)+1}: {str(e)}"})}]}
+
+      payload = {"days": days, "summaries": summaries}
+      return {"content": [{"type": "text", "text": json.dumps(payload)}]}
 
     @mcp.tool()
     async def financials_daily_tool(arg: str) -> Dict[str, Any]:
@@ -443,6 +362,57 @@ def create_server() -> FastMCP:
         """
         summary = aggregate_profitability()
         return {"content": [{"type": "text", "text": json.dumps({"summary": summary})}]}
+
+
+    @mcp.tool()
+    async def list_files() -> Dict[str, Any]:
+        """
+        List all files in the project directory.
+
+        This tool scans the project directory and returns a list of all file
+        names. The result is returned inside an MCP content array as JSON
+        under the `files` key.
+
+        Edge cases:
+            - If the directory is empty, an empty list is returned.
+        """
+        files = []
+        for root, _, filenames in os.walk(os.path.dirname(__file__)):
+            for filename in filenames:
+                rel_dir = os.path.relpath(root, os.path.dirname(__file__))
+                rel_file = os.path.join(rel_dir, filename) if rel_dir != '.' else filename
+                files.append(rel_file)
+        payload = {"files": files}
+        return {"content": [{"type": "text", "text": json.dumps(payload)}]}
+    
+    # MCP tool to read a specific file and return its contents
+    @mcp.tool()
+    async def read_file(file_path: str) -> Dict[str, Any]:
+        """
+        Read the contents of a specific file in the project directory.
+
+        Args:
+            file_path: Relative path to the file to be read.
+        Returns:
+            MCP content array with JSON: {"file_path": file_path, "content": file_content}
+        Edge cases:
+            - If the file does not exist or cannot be read, an error message is returned.
+            - If the file is binary or too large, an appropriate error message is returned.
+        """
+        if not file_path or '..' in file_path or file_path.startswith('/'):
+            return {"content": [{"type": "text", "text": json.dumps({"error": "Invalid file path"})}]}
+        
+        abs_path = os.path.join(os.path.dirname(__file__), file_path)
+        if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
+            return {"content": [{"type": "text", "text": json.dumps({"error": "File not found"})}]}
+        
+        try:
+            with open(abs_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            payload = {"file_path": file_path, "content": content}
+            return {"content": [{"type": "text", "text": json.dumps(payload)}]}
+        except Exception as e:
+            return {"content": [{"type": "text", "text": json.dumps({"error": str(e)})}]}
 
     return mcp
 
