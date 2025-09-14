@@ -111,3 +111,38 @@ Below is an example snippet showing how you might configure an MCP tool in a Res
 ```
 
 With the server configured, a deep research model can call `search` and `fetch` to find documents, or call the action tools (`order_inventory`, `set_prices`, etc.) to interact with the simulation.
+
+
+# Docker Setup
+## Commands I ran:
+```
+docker run -it --rm `       
+>>   -v "${PWD}\cloudflared:/home/nonroot/.cloudflared" `
+>>   cloudflare/cloudflared:latest `
+>>   tunnel login
+```
+
+```
+docker run -it --rm `       
+>>   -v "${PWD}\cloudflared:/home/nonroot/.cloudflared" `
+>>   cloudflare/cloudflared:latest `
+>>   tunnel create vending-sim
+```
+^^ The command above gave me the Tunnel ID I used in the config.yml
+
+### Setting up DNS:
+```
+docker run -it --rm `       
+>>   -v "${PWD}\cloudflared:/home/nonroot/.cloudflared" `
+>>   cloudflare/cloudflared:latest `
+>>   tunnel route dns vending-sim app.zach.games
+2025-09-13T23:11:32Z INF Added CNAME app.zach.games which will route to this tunnel tunnelID=08371aa5-cafa-4fb2-8852-d7860e309242
+PS C:\Users\zachb\Downloads\vending_machine_sim> docker run -it --rm `       
+>>   -v "${PWD}\cloudflared:/home/nonroot/.cloudflared" `
+>>   cloudflare/cloudflared:latest `
+>>   tunnel route dns vending-sim mcp.zach.games
+```
+
+```
+docker compose up -d --build
+```
